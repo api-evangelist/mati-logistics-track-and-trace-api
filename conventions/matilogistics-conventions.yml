@@ -1,0 +1,248 @@
+generated: '2026-08-27'
+method: searched
+source: >-
+  https://www.matilogistics.com/api — the published API Reference, read in full
+  on 2026-08-27, plus live probes of https://api.matilogistics.com. Mati
+  publishes no OpenAPI, so every convention below was read from the provider's
+  own prose and worked examples rather than derived from a contract. Where the
+  docs are silent the field says so; nothing here is inferred.
+docs: https://www.matilogistics.com/api
+description: >-
+  Cross-cutting request/response semantics for the Mati Logistics Track and
+  Trace API — the runtime behaviour that applies to every operation rather than
+  to any one endpoint.
+provider: Mati Logistics
+providerId: matilogistics
+base_url: https://api.matilogistics.com
+api_style: REST over HTTPS, JSON request and response bodies
+server_stack: uvicorn (observed via the `server` response header); error shape is FastAPI/Pydantic validation
+
+authentication:
+  scheme: Bearer token in the Authorization header
+  key_prefix: tnt_
+  scope: per organization
+  detail: authentication/matilogistics-authentication.yml
+  docs: https://www.matilogistics.com/api#access
+
+versioning:
+  scheme: URL path prefix
+  mechanism: '/v2/... on api.matilogistics.com'
+  current: v2
+  header_negotiation: false
+  detail: lifecycle/matilogistics-lifecycle.yml
+
+idempotency:
+  supported: false
+  header: null
+  mechanism: null
+  natural_idempotency:
+    documented: true
+    behavior: >-
+      Resubmission of a reference is documented as an UPSERT rather than a
+      duplicate: "Resubmitting the same reference with carrier specified updates
+      the existing request, retaining its id, rather than creating a duplicate."
+      Separately, "If the reference is already tracked, the endpoint returns
+      status: 'succeeded' immediately" and "Re-tracking a reference you've
+      already added is always free."
+    scope: POST /v2/tracking_requests keyed on the reference number
+    limits: >-
+      This is resource-level convergence on the tracking reference, NOT an
+      idempotency-key facility. It does not protect POST /v2/webhooks, and there
+      is no client-supplied key, no replay indicator, and no stated retention
+      window. An agent cannot make an arbitrary write safely retryable.
+  docs: https://www.matilogistics.com/api
+
+pagination:
+  style: cursor
+  request_params:
+    cursor: 'the previous response''s meta.next_cursor, passed as ?cursor='
+  response_fields:
+    data: array of results
+    meta.next_cursor: cursor for the next page, null when exhausted
+    meta.has_more: boolean — stop when false
+  page_size_param: not documented
+  applies_to:
+    - GET /v2/tracking_requests
+    - GET /v2/shipments
+  docs: https://www.matilogistics.com/api
+
+batching:
+  supported: true
+  mechanism: 'POST /v2/tracking_requests/batch with {"ids": [...]}'
+  description: Retrieve multiple tracking-request records by id in a single call.
+
+field_expansion:
+  supported: false
+  note: >-
+    No expand[] / sparse-fieldset facility. Related objects are embedded by
+    default instead — a resolved tracking_request carries the shipment inline as
+    `tracked_object`, and a shipment carries `containers[]`, `events[]`, `route[]`
+    and `summary.transshipments[]`.
+
+metadata:
+  supported: false
+  note: No customer-defined metadata/key-value store is documented on any object.
+
+request_tracing:
+  request_id_header: x-request-id
+  request_id_body_field: error.request_id
+  verified: probed
+  description: >-
+    "request_id is present on every response, successful or otherwise." Confirmed
+    on live probes: 200, 401, 404 and 405 responses from api.matilogistics.com
+    all carried an x-request-id header.
+
+error_envelope:
+  media_type: application/json
+  rfc9457: false
+  shape: '{ "error": { "code", "message", "request_id", "fields"? }, "detail"? }'
+  detail: errors/matilogistics-problem-types.yml
+  docs: https://www.matilogistics.com/api
+
+rate_limits:
+  signal_status: 429
+  response_headers: none documented or observed
+  detail: rate-limits/matilogistics-rate-limits.yml
+
+async_semantics:
+  model: submit-then-resolve
+  description: >-
+    Carrier lookups run asynchronously. A new reference returns 201 with
+    status "pending" and no tracked_object; an already-tracked reference returns
+    "succeeded" with the payload inline. The docs explicitly instruct clients to
+    evaluate status synchronously and then rely on the tracking_request.succeeded
+    webhook rather than polling.
+  typical_resolution: seconds to a few minutes, depending on carrier response times
+
+webhooks:
+  signing_header: X-TNT-Signature
+  event_header: X-TNT-Event
+  verification: HMAC-SHA256 over the raw request body, hex-encoded, keyed with the endpoint secret
+  retries: up to 3 on failure
+  consumer_requirement: handlers must be idempotent; a repeated event should be a no-op
+  detail: asyncapi/matilogistics-webhooks.yml
+
+data_semantics:
+  - name: Local wall-clock times are not converted
+    detail: >-
+      Carrier-published local times are returned verbatim with a trailing Z as a
+      storage convention, flagged by eventTimeIsLocal (event), times_are_local
+      (summary, route point) and labelled by eventTimeZone where the carrier
+      states one. The docs warn explicitly that treating these as UTC shifts the
+      value by hours and can shift last_free_day by a calendar day, which
+      carries direct demurrage exposure.
+  - name: Milestone codes are normalized, descriptions are not
+    detail: >-
+      milestoneCode is a fixed normalized vocabulary shared across carriers;
+      milestoneDescription retains the carrier's original text, and unmappable
+      wording is preserved rather than discarded.
+  - name: route[].role is deliberately un-normalized
+    detail: >-
+      "role is a free-text label, not an enumeration... Clients should treat the
+      value as opaque." Observed values include POL, pol, receipt, Place of
+      Receipt and route-location.transit.sea.
+  - name: Tracking is per container, not per bill of lading
+    detail: >-
+      A bill of lading may cover several containers that move independently.
+      Every event carries containerNo, and any de-duplication key that omits it
+      will collapse distinct container milestones. containerNo null means the
+      event is bill-level.
+  - name: Nulls are absences, not defaults
+    detail: >-
+      Fields the carrier does not provide are returned null; route is an empty
+      array for carriers publishing no routing data; a null last_free_day means
+      no value has been published, NOT unlimited free time; arrival_is_actual
+      null means the carrier did not state actual-vs-estimate, which is distinct
+      from an estimate. "Route data is never synthesized."
+  - name: Derived values carry their evidence
+    detail: >-
+      summary.transshipments[] entries derived from carrier events rather than
+      stated directly set atd_is_load true and carry an evidence[] array with the
+      verbatim carrier wording behind the entry. dwell_hours is null unless both
+      sides are actuals.
+
+dry_run_mode:
+  supported: partial
+  mechanism: GET /v2/carriers/detect
+  description: >-
+    The detection endpoint lets a client validate and classify a reference, and
+    resolve its carrier, BEFORE submitting it for tracking — a genuine rehearsal
+    of the only consequential write. It returns normalized, valid, ref_type,
+    carrier, scac, method and lessor without creating a tracking request. It is
+    not a general dry-run: there is no rehearsal mode for webhook registration
+    or deletion.
+  docs: https://www.matilogistics.com/api#carrier-detection
+
+reversibility:
+  applicable: true
+  grade: documented
+  grade_basis: >-
+    Reversal paths exist and are documented for both write surfaces, but the
+    docs state NO time window for either, and no restore/undo path is published
+    for a deleted tracking request. Under the 0.12.0 rule a reversal path
+    without a stated window grades `documented`, not `verified`. Do not read a
+    window into this artifact: none is published.
+  write_surfaces:
+    - operation: POST /v2/tracking_requests
+      operationId: null
+      creates: a tracking request (and, on resolution, a monitored shipment)
+      reversal:
+        exists: true
+        operation: DELETE /v2/tracking_requests/{id}
+        effect: >-
+          "Stop tracking. Other subscribers tracking the same container are
+          unaffected." Deletion is scoped to the requesting organization's
+          subscription to that reference, not to the underlying shipment.
+        window: null
+        window_docs: null
+        restorable: not documented
+        note: >-
+          Whether re-adding a deleted reference consumes another shipment credit
+          is not stated in the API reference; the pricing FAQ says "Re-tracking
+          a reference you've already added is always free", which suggests it
+          does not, but that sentence is about the app's shipment counter, not
+          about the DELETE endpoint. Treat as unconfirmed.
+      cost_of_error: >-
+        Low and bounded. A mistaken create is a duplicate-free upsert on the
+        reference; a mistaken delete stops one organization's tracking and can
+        be re-created by resubmitting the reference.
+    - operation: POST /v2/webhooks
+      operationId: null
+      creates: a webhook endpoint registration with a signing secret
+      reversal:
+        exists: partial
+        operation: POST /v2/webhooks/{id}/rotate_secret
+        effect: >-
+          Rotates the endpoint's signing secret. This is the documented remedy
+          for a leaked secret, not a reversal of the registration itself.
+        window: null
+        window_docs: null
+      note: >-
+        No DELETE /v2/webhooks/{id} is listed in the published Endpoints
+        section, and no deactivation call is documented, though the creation
+        response carries an `active` boolean implying one exists. An agent
+        cannot un-register a webhook from the documented surface.
+      cost_of_error: >-
+        Moderate. An unwanted endpoint keeps receiving signed deliveries and
+        there is no published way to remove it.
+    - operation: DELETE /v2/tracking_requests/{id}
+      creates: null
+      destructive: true
+      reversal:
+        exists: unknown
+        operation: null
+        effect: null
+        window: null
+      note: >-
+        No restore/undo endpoint is documented. The practical recovery is to
+        resubmit the same reference, which creates a new tracking request.
+
+read_only: false
+
+cross_links:
+  errors: errors/matilogistics-problem-types.yml
+  lifecycle: lifecycle/matilogistics-lifecycle.yml
+  authentication: authentication/matilogistics-authentication.yml
+  rate_limits: rate-limits/matilogistics-rate-limits.yml
+  webhooks: asyncapi/matilogistics-webhooks.yml
+  data_model: data-model/matilogistics-data-model.yml

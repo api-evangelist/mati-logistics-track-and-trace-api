@@ -1,13 +1,46 @@
-name: Mati Logistics Track and Trace API
-description: >-
-  REST API for ocean container/BOL/booking shipment visibility (track and trace) across 20+ carriers and NVOCCs, with
-  normalized milestone events, carrier detection, reference data, and signed webhooks. Access is gated behind a paid
-  subscription tier.
+name: Mati Logistics
+aid: matilogistics
+description: 'Mati Logistics runs a network for global trade connecting buyers, suppliers, distributors, forwarders and NVOCCs,
+  with two products: an AI sourcing agent over customs-derived trade data covering 66,459 manufacturers and exporters, and
+  Track and Trace. Track and Trace is the API product: a REST/JSON API for ocean container, bill-of-lading and booking shipment
+  visibility across 24 ocean carriers and NVOCCs, returning normalized milestone events, carrier-stated routes, transshipment
+  dwell and last-free-day data by polling or by HMAC-signed webhook. Bearer-token auth, cursor pagination, ISO 6346 and SCAC
+  identifiers. API access is gated behind a paid subscription tier.'
 url: https://raw.githubusercontent.com/api-evangelist/mati-logistics-track-and-trace-api/refs/heads/main/apis.yml
 created: '2026-08-27'
 modified: '2026-08-27'
 specificationVersion: '0.21'
 tags:
+- logistics
+- supply-chain
+- shipping
+- container-tracking
+- ocean-freight
+- track-and-trace
+- shipment-visibility
+- freight-forwarding
+- NVOCC
+- webhooks
+- REST
+- procurement
+apis:
+- name: Mati Logistics Track and Trace API
+  description: 'REST/JSON API versioned under /v2 at https://api.matilogistics.com for tracking requests, shipments, containers,
+    carrier and terminal reference data, and webhooks. Bearer-token auth (tnt_ keys, one per organization), cursor pagination,
+    HMAC-SHA256-signed webhook deliveries with five event types, and 1,000 write / 10,000 read requests per hour per organization.
+
+
+    NO MACHINE-READABLE CONTRACT IS PUBLISHED. Full STEP 0b contract discovery was run against every host on 2026-08-27 and
+    every candidate missed: the service is FastAPI/uvicorn but /openapi.json, /docs and /redoc are switched off, and GET https://api.matilogistics.com/
+    answers {"service":"tnt_api","docs":null}. There is no GraphQL, gRPC, WSDL, AsyncAPI, MCP server, agent card, llms.txt
+    or /.well-known/ document of any kind, no SDK in any registry, and no public GitHub organization; the apis.json declared
+    at submission (https://www.matilogistics.com/apis.json) returns 404. What DOES exist is an unusually complete, server-rendered,
+    human-readable API Reference at https://www.matilogistics.com/api, from which the authentication, conventions, error,
+    webhook, rate-limit, data-model and conformance artifacts in this repo were read verbatim. This is a live, well-documented
+    API with no contract — a different finding from an undocumented one. Verified 2026-08-27.'
+  humanURL: https://www.matilogistics.com/api
+  baseURL: https://api.matilogistics.com
+  tags:
   - logistics
   - supply-chain
   - shipping
@@ -20,34 +53,63 @@ tags:
   - webhooks
   - REST
   - procurement
-apis:
-  - name: Mati Logistics Track and Trace API
-    description: >-
-      REST/JSON API (versioned under /v2) for tracking requests, shipments, containers, carrier/terminal reference data,
-      and webhooks. Bearer-token auth, cursor pagination, HMAC-signed webhook deliveries.
-    humanURL: https://www.matilogistics.com/api
-    baseURL: https://api.matilogistics.com
-    tags:
-      - logistics
-      - supply-chain
-      - shipping
-      - container-tracking
-      - ocean-freight
-      - track-and-trace
-      - shipment-visibility
-      - freight-forwarding
-      - NVOCC
-      - webhooks
-      - REST
-      - procurement
-    properties:
-      - type: Documentation
-        url: https://www.matilogistics.com/api
+  properties:
+  - type: Documentation
+    url: https://www.matilogistics.com/api
+  - type: APIReference
+    url: https://www.matilogistics.com/api
+  - type: GettingStarted
+    url: https://www.matilogistics.com/api#access
 maintainers:
-  - FN: Mati Logistics Track and Trace API
-    url: https://www.matilogistics.com
+- FN: Mati Logistics
+  url: https://www.matilogistics.com
 generated:
   by: apis.io/add
   model: claude-opus-4-8
   confidence: 80
   at: '2026-08-27T05:58:18.063Z'
+common:
+- type: Website
+  url: https://www.matilogistics.com
+- type: Documentation
+  url: https://www.matilogistics.com/api
+- type: APIReference
+  url: https://www.matilogistics.com/api
+- type: GettingStarted
+  url: https://www.matilogistics.com/api#access
+- type: Pricing
+  url: https://www.matilogistics.com/track-trace#pricing
+- type: SignUp
+  url: https://www.matilogistics.com/signup
+- type: Login
+  url: https://www.matilogistics.com/login
+- type: Authentication
+  url: authentication/matilogistics-authentication.yml
+- type: Conventions
+  url: conventions/matilogistics-conventions.yml
+- type: ErrorCatalog
+  url: errors/matilogistics-problem-types.yml
+- type: RateLimits
+  url: rate-limits/matilogistics-rate-limits.yml
+- type: Lifecycle
+  url: lifecycle/matilogistics-lifecycle.yml
+- type: Webhooks
+  url: asyncapi/matilogistics-webhooks.yml
+- type: DataModel
+  url: data-model/matilogistics-data-model.yml
+- type: Conformance
+  url: conformance/matilogistics-conformance.yml
+- type: Plans
+  url: plans/matilogistics-plans-pricing.yml
+- type: Packages
+  url: packages/matilogistics-packages.yml
+- type: LLMsTxt
+  url: llms/matilogistics-llms.txt
+- type: DomainSecurity
+  url: security/matilogistics-domain-security.yml
+image: https://www.matilogistics.com/landing-logo.svg
+x-enrichment:
+  date: '2026-08-27'
+  status: enriched
+  artifacts_added: 14
+  pass: local-v1

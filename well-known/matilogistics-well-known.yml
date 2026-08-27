@@ -1,0 +1,74 @@
+generated: '2026-08-27'
+method: probed
+description: >-
+  Results of probing the /.well-known/ discovery surface on every host in
+  apis.yml — the API host (api.matilogistics.com), the marketing/docs host
+  (www.matilogistics.com) and the apex (matilogistics.com). Status is the HTTP
+  code observed at fetch time on 2026-08-27. NOTHING was served: every path on
+  every host returned 404. The API host answers 404 with its own JSON error
+  envelope ({"error":{"code":"not_found",...}}), and the web host answers 404
+  with its Next.js not-found page, so neither is a catch-all masking a real
+  document. No files were saved and NO WellKnown or SecurityTxt pointer is
+  emitted in apis.yml — this artifact records a verified absence, not a presence.
+hosts:
+  - host: https://api.matilogistics.com
+    documents:
+      - path: /.well-known/security.txt
+        status: 404
+      - path: /.well-known/openid-configuration
+        status: 404
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+      - path: /.well-known/oauth-protected-resource
+        status: 404
+      - path: /.well-known/api-catalog
+        status: 404
+      - path: /.well-known/ai-plugin.json
+        status: 404
+      - path: /.well-known/agent-card.json
+        status: 404
+      - path: /.well-known/agent.json
+        status: 404
+      - path: /.well-known/llms.txt
+        status: 404
+  - host: https://www.matilogistics.com
+    documents:
+      - path: /.well-known/security.txt
+        status: 404
+      - path: /.well-known/openid-configuration
+        status: 404
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+      - path: /.well-known/oauth-protected-resource
+        status: 404
+      - path: /.well-known/api-catalog
+        status: 404
+      - path: /.well-known/ai-plugin.json
+        status: 404
+      - path: /.well-known/agent-card.json
+        status: 404
+      - path: /.well-known/agent.json
+        status: 404
+      - path: /.well-known/llms.txt
+        status: 404
+  - host: https://matilogistics.com
+    documents:
+      - path: /.well-known/security.txt
+        status: 404
+      - path: /.well-known/openid-configuration
+        status: 404
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+      - path: /.well-known/oauth-protected-resource
+        status: 404
+      - path: /.well-known/api-catalog
+        status: 404
+      - path: /.well-known/ai-plugin.json
+        status: 404
+      - path: /.well-known/agent-card.json
+        status: 404
+      - path: /.well-known/agent.json
+        status: 404
+      - path: /.well-known/llms.txt
+        status: 404
+saved_documents: []

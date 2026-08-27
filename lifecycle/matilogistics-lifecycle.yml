@@ -1,0 +1,111 @@
+generated: '2026-08-27'
+method: searched
+source: >-
+  https://www.matilogistics.com/api and https://www.matilogistics.com/track-trace,
+  read 2026-08-27, plus probes for the usual lifecycle surfaces. Most fields
+  below are recorded ABSENT: Mati publishes no versioning policy, no deprecation
+  policy, no changelog, no status page and no SLA. The absences were probed, not
+  assumed.
+provider: Mati Logistics
+providerId: matilogistics
+docs: https://www.matilogistics.com/api
+
+versioning:
+  scheme: URL path prefix
+  mechanism: '/v2/ on api.matilogistics.com — e.g. POST /v2/tracking_requests'
+  current: v2
+  header_negotiation: false
+  policy_published: false
+  notes: >-
+    The API is versioned in the path and every documented endpoint sits under
+    /v2. No policy states what constitutes a breaking change, how long a major
+    version is supported, or whether a v1 still exists — GET /v2 and GET /v2/
+    both 404, and no /v1 surface is documented. The version is a fact about the
+    URL, not a commitment.
+
+deprecation:
+  policy_url: null
+  policy_published: false
+  sunset_header: false
+  deprecation_header: false
+  rfc8594: false
+  notes: >-
+    No deprecation policy, no advance-notice commitment, and no RFC 8594
+    Sunset/Deprecation response headers are documented. An integrator has no
+    published signal that an endpoint or field is going away.
+  deprecated_operations: []
+  deprecated_operations_note: >-
+    None could be derived — there is no OpenAPI carrying deprecated:true flags,
+    and the prose reference marks nothing as deprecated.
+
+changelog:
+  published: false
+  url: null
+  probes:
+    - {url: 'https://www.matilogistics.com/changelog', status: 404}
+    - {url: 'https://www.matilogistics.com/blog', status: 404}
+  notes: >-
+    No dated changelog anywhere on the site. The reference itself is undated and
+    carries no "last updated" marker, so a consumer cannot tell whether the
+    behaviour it describes changed last week or last year. The carrier coverage
+    table is explicitly a moving target ("new ones added regularly") with no
+    published record of when a carrier was added.
+
+status_page:
+  published: false
+  url: null
+  probes:
+    - {url: 'https://status.matilogistics.com/', status: 0, note: host does not resolve}
+    - {url: 'https://www.matilogistics.com/status', status: 404}
+  health_endpoint:
+    url: https://api.matilogistics.com/health
+    status: 200
+    body: '{"status":"ok"}'
+    note: >-
+      A live unauthenticated health endpoint exists and answers, but it is not
+      documented in the reference and it is not a status page — it reports
+      process liveness, not carrier-integration health, which is where this
+      product's failures actually live.
+
+sla:
+  published: false
+  url: null
+  uptime_target: null
+  support_response_target: null
+  notes: >-
+    No SLA, uptime target or support-response commitment is published. The
+    Enterprise tier advertises "Priority support for enterprise teams" with no
+    stated terms; the pricing FAQ routes everything else to a contact form.
+
+legal:
+  terms_of_service: null
+  privacy_policy: null
+  probes:
+    - {url: 'https://www.matilogistics.com/terms', status: 404}
+    - {url: 'https://www.matilogistics.com/terms-of-service', status: 404}
+    - {url: 'https://www.matilogistics.com/privacy', status: 404}
+    - {url: 'https://www.matilogistics.com/privacy-policy', status: 404}
+    - {url: 'https://www.matilogistics.com/legal', status: 404}
+  notes: >-
+    No terms of service and no privacy policy are served at any conventional
+    path, and none are linked from the homepage, the pricing page or the API
+    reference — despite the product taking payment through Stripe and processing
+    customer shipment data. This is a governance gap, not merely a discovery one.
+
+data_retention:
+  documented: partial
+  notes: >-
+    "You never lose access to shipments you're already tracking" (Getting
+    access) and "Credits never expire" (pricing FAQ) are the only retention
+    statements. Nothing states how long event history is kept, whether a deleted
+    tracking request purges data, or what happens to shipment data after
+    cancellation.
+
+carrier_coverage_lifecycle:
+  count_at_check: 24
+  source: 'https://www.matilogistics.com/api — "Carrier coverage" table'
+  machine_readable_endpoint: GET /v2/carriers
+  note: >-
+    Coverage is the product's real surface area and it changes. The provider
+    publishes a live endpoint for it, which is the right shape, but the endpoint
+    is auth-gated and the human table has no revision date.

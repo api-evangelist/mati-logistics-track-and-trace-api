@@ -1,0 +1,91 @@
+generated: '2026-08-27'
+method: searched
+source: >-
+  https://www.matilogistics.com/api — the "Authentication" and "Getting access"
+  sections of the published API Reference, read on 2026-08-27. Mati Logistics
+  publishes NO OpenAPI, so this profile could not be derived from
+  securitySchemes; every field below is quoted from the provider's own prose
+  reference, and the 401 envelope was confirmed against a live unauthenticated
+  request to https://api.matilogistics.com/v2/carriers.
+docs: https://www.matilogistics.com/api#access
+provider: Mati Logistics
+providerId: matilogistics
+api: Mati Logistics Track and Trace API
+base_url: https://api.matilogistics.com
+
+schemes:
+  - id: bearer
+    type: http
+    scheme: bearer
+    in: header
+    header: Authorization
+    format: 'Authorization: Bearer <key>'
+    key_prefix: tnt_
+    example_shape: tnt_your_key_here
+    description: >-
+      Every request requires a bearer token in the Authorization header. Keys
+      are issued per organization and scoped to it, so a key can only ever read
+      and write that organization's own shipments.
+    required: true
+
+oauth2: false
+openid_connect: false
+mutual_tls: false
+basic_auth: false
+api_key_query_param: false
+
+key_management:
+  issued_from: The API keys page inside the Mati web app (app.matilogistics.com / /app)
+  availability: Any subscription plan; a 7-day free trial is available.
+  scope: Per organization.
+  display: >-
+    "Your key is shown exactly once when issued and is not recoverable
+    afterwards; if you lose it, revoke it and issue a new one."
+  rotation: Revoke and issue a new key. No programmatic key-management API is documented.
+  self_service: true
+  gating: >-
+    API access is not on the free / pay-as-you-go tier. It is included with
+    subscriptions of 250+ shipments per month, or purchasable for $1,800 per
+    year on lower-volume subscriptions. See plans/matilogistics-plans-pricing.yml.
+
+impersonation:
+  supported: true
+  note: >-
+    The published 403 meaning — "The key is not permitted to act as the
+    subscriber it named" — indicates a key may name a subscriber it acts for,
+    but the mechanism (header or body field) is NOT documented in the public
+    reference.
+
+webhook_authentication:
+  direction: outbound (Mati -> your endpoint)
+  scheme: HMAC-SHA256
+  signature_header: X-TNT-Signature
+  event_header: X-TNT-Event
+  encoding: hex
+  signed_payload: the raw request body, before JSON parsing or re-serialization
+  secret: >-
+    Per-endpoint signing secret returned once at webhook creation; may be
+    supplied at creation or rotated via POST /v2/webhooks/{id}/rotate_secret.
+  docs: https://www.matilogistics.com/api
+
+failure_responses:
+  - status: 401
+    code: unauthenticated
+    meaning: Missing, invalid, or revoked API key.
+    observed_body: '{"error":{"code":"unauthenticated","message":"Missing bearer token","request_id":"..."},"detail":"Missing bearer token"}'
+    observed_at: 'https://api.matilogistics.com/v2/carriers (probed 2026-08-27, no Authorization header)'
+  - status: 403
+    meaning: The key is not permitted to act as the subscriber it named.
+  - status: 404
+    meaning: No such object, or one outside the requesting organization.
+
+evidence:
+  - url: https://www.matilogistics.com/api
+    status: 200
+    note: Server-rendered HTML reference containing the Authentication section verbatim.
+  - url: https://api.matilogistics.com/v2/carriers
+    status: 401
+    note: Live unauthenticated probe; returned the documented unauthenticated envelope.
+  - url: https://api.matilogistics.com/.well-known/oauth-authorization-server
+    status: 404
+    note: No OAuth authorization-server metadata; bearer API keys are the only scheme.

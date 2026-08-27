@@ -1,0 +1,105 @@
+generated: '2026-08-27'
+method: searched
+spec_type: Webhooks
+source: >-
+  https://www.matilogistics.com/api — the "Webhooks" section of the published
+  API Reference, read 2026-08-27. Every event name, header, signature scheme and
+  retry rule below is quoted from the provider's own documentation.
+docs: https://www.matilogistics.com/api
+
+asyncapi_published: false
+asyncapi_probe:
+  - url: https://api.matilogistics.com/asyncapi.json
+    status: 404
+  - url: https://api.matilogistics.com/openapi.json
+    status: 404
+  - url: https://www.matilogistics.com/.well-known/api-catalog
+    status: 404
+honesty_note: >-
+  Mati Logistics ships a real, documented, signed outbound webhook surface, but
+  publishes NO AsyncAPI and no machine-readable event schemas. The event names,
+  headers and signature algorithm below are complete as documented; the PAYLOAD
+  SHAPES are not — the reference does not show a delivery body for any event
+  type. This artifact therefore records the event catalogue, not the schemas.
+  Nothing has been invented to fill the gap.
+
+direction: outbound
+provider: Mati Logistics
+providerId: matilogistics
+
+subscription:
+  self_service: true
+  register: POST /v2/webhooks
+  register_body: '{"url": "https://example.com/hooks/mati", "secret": "<optional>", "event_types": [<optional>]}'
+  register_response_201: '{"id", "url", "secret", "active", "event_types"}'
+  secret_returned: once, at creation
+  secret_supplied_by_client: supported at creation
+  rotate_secret: POST /v2/webhooks/{id}/rotate_secret
+  filtering: 'event_types null subscribes to everything; pass an array to narrow it.'
+  unregister: not documented
+  unregister_note: >-
+    No DELETE or deactivate operation for a webhook appears in the published
+    Endpoints section, although the creation response carries an `active`
+    boolean. See conventions/matilogistics-conventions.yml reversibility.
+  replay: not documented
+  delivery_log: not documented
+
+security:
+  signature_header: X-TNT-Signature
+  event_header: X-TNT-Event
+  algorithm: HMAC-SHA256
+  encoding: hex
+  signed_material: the raw request body, as received, before JSON parsing or re-serialization
+  timestamp_in_signature: false
+  published_verification_example: |
+    import hmac, hashlib
+    def verify(raw_body: bytes, signature: str, secret: str) -> bool:
+        expected = hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected, signature)
+
+delivery:
+  retries: up to 3 on failure
+  retry_backoff: not documented
+  success_criteria: return 2xx promptly
+  slow_handler_behavior: a slow handler is treated as a failure and retried
+  consumer_requirement: >-
+    Handlers must be idempotent — a repeated event should be a no-op rather than
+    a second shipment update.
+
+events:
+  - name: tracking_request.succeeded
+    description: A reference resolved; the shipment is available.
+    payload_schema_published: false
+    related_resource: tracking_request
+  - name: tracking_request.failed
+    description: The carrier lookup failed.
+    payload_schema_published: false
+    related_resource: tracking_request
+  - name: tracking_request.not_found
+    description: The carrier has no record of this reference.
+    payload_schema_published: false
+    related_resource: tracking_request
+  - name: shipment.updated
+    description: New milestone data on a tracked shipment.
+    payload_schema_published: false
+    related_resource: shipment
+  - name: container.transport_event
+    description: A container-level movement.
+    payload_schema_published: false
+    related_resource: container
+
+event_count: 5
+
+polling_alternative:
+  supported: true
+  note: >-
+    The docs explicitly prefer webhooks over polling: "rely on the
+    tracking_request.succeeded webhook event rather than polling the endpoint."
+    Reads are limited to 10,000/hour per organization.
+
+gaps:
+  - No AsyncAPI document.
+  - No published delivery payload for any of the five event types.
+  - No documented way to list, deactivate or delete a registered webhook endpoint.
+  - No delivery log, replay, or dead-letter facility documented.
+  - No timestamp in the signature, so replay protection is left to the consumer.

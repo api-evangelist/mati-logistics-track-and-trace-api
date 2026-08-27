@@ -1,0 +1,80 @@
+specification: API Commons Rate Limits
+specificationVersion: '0.1'
+provider: Mati Logistics
+providerId: matilogistics
+generated: '2026-08-27'
+created: '2026-08-27'
+modified: '2026-08-27'
+method: searched
+source: >-
+  https://www.matilogistics.com/api — the "Rate limits" section of the published
+  API Reference, read 2026-08-27. Limits are stated in the docs as numbers; the
+  provider does NOT document any RateLimit-* / X-RateLimit-* response headers,
+  and none were observed on a live unauthenticated 401 from
+  https://api.matilogistics.com/v2/carriers.
+docs: https://www.matilogistics.com/api
+description: >-
+  Two limit classes applied per organization on a fixed hourly window. Writes are
+  the constrained resource because each may trigger a live carrier lookup; reads
+  are served from stored data. Stated as defaults that "can be raised on request".
+
+limit_count: 2
+scope: per-organization
+window: fixed hourly
+
+limits:
+  - name: Write operations
+    scope: organization
+    metric: requests_per_hour
+    limit: 1000
+    timeFrame: hour
+    burst: null
+    covers: >-
+      Creating tracking requests, webhook changes. GET /v2/carriers/detect with
+      deep=true also counts against the write rate limit because it performs a
+      live lessor lookup.
+  - name: Read operations
+    scope: organization
+    metric: requests_per_hour
+    limit: 10000
+    timeFrame: hour
+    burst: null
+    covers: Every GET.
+
+responseCodes:
+  throttled: 429
+
+headers:
+  requestId: x-request-id
+  rateLimitLimit: null
+  rateLimitRemaining: null
+  rateLimitReset: null
+  retryAfter: null
+  note: >-
+    RUNTIME SIGNAL GAP. Mati publishes the numbers but not the headers. No
+    RateLimit-*, X-RateLimit-* or Retry-After header is documented, and none
+    appeared on a live response. An agent cannot discover its remaining budget
+    or a safe retry time from the wire — it can only observe a 429 after the
+    fact and back off blindly. Every response does carry x-request-id (confirmed
+    on a live probe), which is the only runtime header the API emits.
+
+policies:
+  - name: Raisable on request
+    description: >-
+      "These are default values and can be raised on request." No self-service
+      limit-increase endpoint or documented request channel is published.
+  - name: Asynchronous resolution reduces polling need
+    description: >-
+      The docs steer integrators to the tracking_request.succeeded webhook
+      rather than polling, which is the provider's own mitigation for the read
+      limit. See asyncapi/matilogistics-webhooks.yml.
+
+evidence:
+  - url: https://www.matilogistics.com/api
+    status: 200
+    note: '"Writes 1,000 / hour", "Reads 10,000 / hour", "Exceeding a limit returns 429."'
+  - url: https://api.matilogistics.com/v2/carriers
+    status: 401
+    note: >-
+      Live probe 2026-08-27. Response headers were date, server (uvicorn),
+      content-length, content-type, x-request-id. No rate-limit headers present.

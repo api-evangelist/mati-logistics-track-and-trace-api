@@ -1,0 +1,71 @@
+generated: '2026-08-27'
+method: searched
+source: >-
+  Registry searches and direct metadata lookups run 2026-08-27 against npm,
+  PyPI, crates.io and GitHub, plus a full read of the published API Reference at
+  https://www.matilogistics.com/api and the pricing/FAQ pages. Mati Logistics
+  publishes NO client libraries of any kind.
+provider: Mati Logistics
+providerId: matilogistics
+
+package_count: 0
+official_sdk_count: 0
+packages: []
+
+first_party_sdks: false
+community_sdks_found: false
+
+searches:
+  - registry: npm
+    url: 'https://registry.npmjs.org/-/v1/search?text=matilogistics'
+    status: 200
+    results: 0
+  - registry: npm
+    url: 'https://registry.npmjs.org/-/v1/search?text=mati%20logistics'
+    status: 200
+    results: 829
+    note: >-
+      All unrelated (MetaMap/Mati identity SDK, Laravel Mix wrappers, generic
+      logistics utilities). No package references matilogistics.com or the
+      tnt_ key scheme.
+  - registry: PyPI
+    url: 'https://pypi.org/pypi/matilogistics/json'
+    status: 404
+  - registry: PyPI
+    url: 'https://pypi.org/pypi/mati-logistics/json'
+    status: 404
+  - registry: PyPI
+    url: 'https://pypi.org/pypi/mati_logistics/json'
+    status: 404
+  - registry: crates.io
+    url: 'https://crates.io/api/v1/crates/matilogistics'
+    status: 403
+    note: crates.io rejects unauthenticated non-browser agents; no Rust SDK is referenced in the docs either.
+  - registry: GitHub
+    url: 'https://api.github.com/orgs/matilogistics'
+    status: 404
+  - registry: GitHub
+    url: 'https://api.github.com/orgs/mati-logistics'
+    status: 404
+
+docs_evidence:
+  - url: https://www.matilogistics.com/api
+    status: 200
+    note: >-
+      Every example in the reference is a raw curl invocation. The only code
+      sample of any kind is a five-line Python webhook-signature verification
+      snippet using hmac/hashlib from the standard library. No SDK, no
+      "Libraries" section, no install instruction, and no link to any repository
+      appears anywhere in the reference.
+
+finding: >-
+  Zero packages is the honest result, and for this API it is a defensible one
+  rather than a decay signal: there is no first-party SDK to have gone stale.
+  What it does mean is that every integrator writes and maintains their own
+  client against prose documentation with no machine-readable contract to
+  generate from — the SDK gap and the OpenAPI gap here are the same gap.
+
+version_note: >-
+  No `version:` or `published:` field is recorded on any entry because there are
+  no entries. Nothing was found in any registry to read metadata from; this is a
+  checked absence, not an unchecked one.

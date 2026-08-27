@@ -1,0 +1,214 @@
+generated: '2026-08-27'
+method: derived
+source: >-
+  Derived from the object definitions and worked JSON examples in the published
+  API Reference at https://www.matilogistics.com/api (read 2026-08-27). There is
+  no OpenAPI to derive $ref links from, so this graph was read out of the
+  "Core concepts", "Quickstart", "Route", "Bills covering several containers",
+  "Last free day" and "Transshipments" sections and the response bodies printed
+  there. Field names are quoted exactly as the provider prints them; fields not
+  shown in any published example are not listed.
+docs: https://www.matilogistics.com/api
+provider: Mati Logistics
+providerId: matilogistics
+notation: >-
+  relationships use has_one / has_many / belongs_to with the reference field
+  name; direction is from the entity that owns the reference.
+id_scheme: UUID v4 (no typed id prefixes)
+
+entities:
+  - name: tracking_request
+    domain: tracking
+    description: >-
+      The initial request to track a reference number. Created immediately with
+      status "pending", then resolved asynchronously against the carrier.
+    fields:
+      - {name: id, type: uuid}
+      - {name: request_type, type: enum, values: [auto, container, bol, booking], default: auto}
+      - {name: request_number, type: string, note: the carrier reference being tracked}
+      - {name: scac, type: string, nullable: true}
+      - {name: status, type: enum, values: [pending, succeeded, failed]}
+      - {name: error_code, type: string, nullable: true, example: carrier_unknown}
+      - {name: error_message, type: string, nullable: true}
+      - {name: shipment_id, type: uuid, nullable: true}
+      - {name: tracked_object, type: object, note: the embedded shipment once resolved}
+      - {name: created_at, type: timestamp}
+      - {name: continue_tracking, type: boolean, note: 'false performs a one-off lookup rather than a monitored shipment'}
+      - {name: carrier, type: string, note: 'write-only hint; SCAC ("MAEU") or carrier name ("Maersk")'}
+  - name: shipment
+    domain: tracking
+    description: >-
+      The verified carrier tracking data — vessel, voyage, ETA, milestone
+      events. Attached as tracked_object on the tracking_request once resolved.
+      Corresponds to a bill of lading, which may cover several containers.
+    fields:
+      - {name: id, type: uuid}
+      - {name: carrier, type: string}
+      - {name: tags, type: array, note: progress summary — milestones reached to date, in journey order}
+      - {name: original_eta, type: timestamp, nullable: true}
+      - {name: original_etd, type: timestamp, nullable: true}
+      - {name: summary, type: object}
+      - {name: tracking_enabled, type: boolean}
+      - {name: stale, type: boolean}
+      - {name: containers, type: array}
+      - {name: events, type: array}
+      - {name: route, type: array}
+  - name: shipment_summary
+    domain: tracking
+    embedded_in: shipment
+    description: Shipment-level rollup. Carries no zone label because its arrival and departure values pertain to different ports.
+    fields:
+      - {name: vessel, type: string, nullable: true}
+      - {name: voyage, type: string, nullable: true}
+      - {name: eta, type: timestamp, nullable: true}
+      - {name: etd, type: timestamp, nullable: true}
+      - {name: ata, type: timestamp, nullable: true}
+      - {name: atd, type: timestamp, nullable: true}
+      - {name: last_free_day, type: date, nullable: true, note: 'null means no value published, NOT unlimited free time'}
+      - {name: location, type: string, nullable: true}
+      - {name: times_are_local, type: boolean}
+      - {name: transshipments, type: array}
+  - name: container
+    domain: tracking
+    description: >-
+      An individual container unit associated with a shipment. A single bill of
+      lading may encompass multiple containers, which do not move as a unit.
+    fields:
+      - {name: id, type: uuid}
+      - {name: container_no, type: string, note: ISO 6346 equipment identifier}
+      - {name: last_free_day, type: date, nullable: true}
+      - {name: availability, type: string, nullable: true}
+      - {name: hold_flag, type: boolean}
+      - {name: last_event_at, type: timestamp, nullable: true}
+  - name: event
+    domain: tracking
+    description: >-
+      A milestone event. Normalized milestoneCode plus the carrier's verbatim
+      milestoneDescription. Bill-level events carry containerNo null.
+    fields:
+      - {name: containerNo, type: string, nullable: true}
+      - {name: carrier, type: string}
+      - {name: sourceLabel, type: string}
+      - {name: milestoneCode, type: string, note: normalized vocabulary; may be empty or carrier text when unmapped}
+      - {name: milestoneDescription, type: string, note: the carrier's original text}
+      - {name: location, type: string}
+      - {name: eventTime, type: timestamp}
+      - {name: eventTimeIsLocal, type: boolean}
+      - {name: eventTimeZone, type: string, nullable: true}
+      - {name: eta, type: timestamp, nullable: true}
+      - {name: lastFreeDay, type: date, nullable: true, note: value as recorded at that event — an audit trail of carrier revisions}
+      - {name: demurrageFlag, type: boolean}
+      - {name: holdFlag, type: boolean}
+  - name: route_point
+    domain: tracking
+    embedded_in: shipment
+    description: >-
+      One location named by the carrier, in the order stated, including
+      intermediate ports. Reflects the carrier's own statement; never synthesized.
+    fields:
+      - {name: sequence, type: integer}
+      - {name: role, type: string, note: 'free-text, NOT an enumeration; treat as opaque'}
+      - {name: location, type: string}
+      - {name: location_code, type: string, nullable: true}
+      - {name: country, type: string, nullable: true}
+      - {name: terminal, type: string, nullable: true}
+      - {name: arrival_time, type: timestamp, nullable: true}
+      - {name: arrival_is_actual, type: boolean, nullable: true, note: 'null means the carrier did not state it — distinct from an estimate'}
+      - {name: departure_time, type: timestamp, nullable: true}
+      - {name: departure_is_actual, type: boolean, nullable: true}
+      - {name: vessel, type: string, nullable: true}
+      - {name: voyage, type: string, nullable: true}
+      - {name: mode, type: string, nullable: true}
+      - {name: times_are_local, type: boolean}
+  - name: transshipment
+    domain: tracking
+    embedded_in: shipment_summary
+    description: An intermediate port with recorded actual movements, in journey order. A direct service has an empty array.
+    fields:
+      - {name: port, type: string}
+      - {name: arrived_from, type: string}
+      - {name: departing_to, type: string}
+      - {name: inbound_vessel, type: string, nullable: true}
+      - {name: outbound_vessel, type: string, nullable: true}
+      - {name: eta, type: timestamp, nullable: true}
+      - {name: ata, type: timestamp, nullable: true}
+      - {name: etd, type: timestamp, nullable: true}
+      - {name: atd, type: timestamp, nullable: true}
+      - {name: atd_is_load, type: boolean, note: true when the departure is derived from the onward load rather than a stated departure}
+      - {name: dwell_hours, type: number, nullable: true, note: computed from actuals only; null when either side is an estimate}
+      - {name: evidence, type: array, note: verbatim carrier wording underlying the derived entry}
+  - name: carrier
+    domain: reference
+    description: A carrier or NVOCC in the coverage list, addressable by SCAC.
+    fields:
+      - {name: name, type: string}
+      - {name: scac, type: string}
+      - {name: type, type: enum, values: [Ocean carrier, NVOCC]}
+  - name: carrier_detection
+    domain: reference
+    description: The result of classifying a reference and resolving its carrier before submission.
+    fields:
+      - {name: normalized, type: string}
+      - {name: valid, type: boolean}
+      - {name: ref_type, type: enum, values: [container, bol, booking]}
+      - {name: carrier, type: string, nullable: true}
+      - {name: scac, type: string, nullable: true}
+      - {name: carrier_name, type: string, nullable: true}
+      - {name: method, type: enum, values: [container_prefix, scac_prefix, lessor], nullable: true}
+      - {name: lessor, type: string, nullable: true}
+      - {name: lessor_name, type: string, nullable: true}
+      - {name: on_hire, type: boolean, nullable: true}
+      - {name: message, type: string, nullable: true}
+  - name: terminal
+    domain: reference
+    description: A terminal available for direct query (GET /v2/terminals). No field list is published.
+    fields: []
+  - name: webhook
+    domain: platform
+    description: A registered endpoint receiving signed event deliveries.
+    fields:
+      - {name: id, type: uuid}
+      - {name: url, type: string}
+      - {name: secret, type: string, note: returned once at creation}
+      - {name: active, type: boolean}
+      - {name: event_types, type: array, nullable: true, note: null subscribes to everything}
+
+relationships:
+  - {from: tracking_request, to: shipment, kind: has_one, via: shipment_id}
+  - {from: tracking_request, to: shipment, kind: has_one, via: tracked_object, note: embedded inline once resolved}
+  - {from: shipment, to: container, kind: has_many, via: containers}
+  - {from: shipment, to: event, kind: has_many, via: events}
+  - {from: shipment, to: route_point, kind: has_many, via: route}
+  - {from: shipment, to: shipment_summary, kind: has_one, via: summary}
+  - {from: shipment_summary, to: transshipment, kind: has_many, via: transshipments}
+  - {from: container, to: event, kind: has_many, via: containerNo}
+  - {from: event, to: container, kind: belongs_to, via: containerNo, note: null means the event is bill-level}
+  - {from: shipment, to: carrier, kind: belongs_to, via: carrier}
+  - {from: tracking_request, to: carrier, kind: belongs_to, via: scac}
+
+cardinality_notes:
+  - >-
+    A bill of lading (shipment) may cover several containers, and those
+    containers do not move as a unit — they may discharge on different dates and
+    be returned empty weeks apart. Tracking is performed per container.
+  - >-
+    last_free_day appears in three places with different meanings:
+    containers[].last_free_day (per container, authoritative),
+    summary.last_free_day (shipment-level, applicable to single-container
+    shipments) and events[].lastFreeDay (the value as recorded at that event, an
+    audit trail of carrier revisions).
+  - >-
+    Any de-duplication key over events MUST include containerNo. Two containers
+    discharged in the same hour at the same terminal produce events identical
+    except for the container number.
+
+vocabularies:
+  milestone_codes:
+    ocean: [EMPTY_PICKUP, GATE_IN, LOAD, VESSEL_DEPARTURE, TRANSSHIPMENT_DISCHARGE, TRANSSHIPMENT_LOAD, VESSEL_ARRIVAL, VESSEL_BERTHING, DISCHARGE, AVAILABLE_FOR_PICKUP, GATE_OUT_DELIVERY, EMPTY_RETURN]
+    inland: [RAIL_LOAD, RAIL_DEPARTURE, RAIL_ARRIVAL, RAIL_UNLOAD, INLAND_TRANSIT, INLAND_RECEIVED]
+    schedule: [ETA_UPDATE, ETD_UPDATE, LFD_UPDATE]
+    document_customs_release: [CUSTOMS_HOLD, CUSTOMS_RELEASE, CUSTOMS_FILED, HOLD_PLACED, HOLD_RELEASED, CARRIER_RELEASE, ISF_FILED, BOOKING_SUBMITTED, BOOKING_CONFIRMED, DOCS_SUBMITTED, BL_ISSUED, BL_SURRENDERED, IN_BOND_AUTHORIZED, NOTIFICATION_SENT, CFS_STRIPPED, CFS_STUFFED, SERVICES_COMPLETED]
+  shipment_tags: [EMPTY_PICKED_UP, GATE_IN, LOADED, VESSEL_DEPARTED, TRANSSHIPPED, VESSEL_ARRIVED, VESSEL_BERTHED, DISCHARGED, AVAILABLE_FOR_PICKUP, RAIL_DEPARTED, RAIL_ARRIVED, INLAND_IN_TRANSIT, INLAND_RECEIVED, DELIVERED, EMPTY_RETURNED]
+  shipment_tags_note: Document states produce no tag, as they are not journey progress.
+
+render: null

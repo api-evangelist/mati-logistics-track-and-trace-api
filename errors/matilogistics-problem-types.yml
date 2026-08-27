@@ -1,0 +1,110 @@
+generated: '2026-08-27'
+method: searched
+format: mati-error-object
+source: >-
+  https://www.matilogistics.com/api — the "Errors" section of the published API
+  Reference, read 2026-08-27, plus live unauthenticated probes against
+  https://api.matilogistics.com/ (404 and 401 envelopes observed verbatim).
+  Mati publishes no OpenAPI, so nothing here was derived from response schemas.
+docs: https://www.matilogistics.com/api
+provider: Mati Logistics
+providerId: matilogistics
+rfc9457: false
+
+envelope:
+  media_type: application/json
+  shape: '{ "error": { "code": string, "message": string, "request_id": string, "fields": array? }, "detail": string? }'
+  request_id_field: error.request_id
+  request_id_header: x-request-id
+  notes: >-
+    "request_id is present on every response, successful or otherwise. Include
+    it when reporting an issue to identify the specific call." Validation
+    failures add a `fields` array of {type, loc, msg, input} entries naming the
+    invalid input — the Pydantic/FastAPI validation shape.
+
+observed_codes:
+  - code: unauthenticated
+    status: 401
+    observed: 'https://api.matilogistics.com/v2/carriers (probe 2026-08-27)'
+    message: Missing bearer token
+  - code: not_found
+    status: 404
+    observed: 'https://api.matilogistics.com/openapi.json (probe 2026-08-27)'
+    message: Not Found
+  - code: unprocessable
+    status: 422
+    observed: documented example in the API Reference
+    message: Request body or parameters failed validation.
+
+problems:
+  - status: 400
+    title: Bad Request
+    meaning: Malformed request, or an unknown carrier hint.
+    remediation: Correct the request shape, or supply a carrier the coverage list names (GET /v2/carriers).
+  - status: 401
+    title: Unauthorized
+    code: unauthenticated
+    meaning: Missing, invalid, or revoked API key.
+    remediation: 'Send `Authorization: Bearer tnt_...`; re-issue the key from the app if revoked.'
+  - status: 403
+    title: Forbidden
+    meaning: The key is not permitted to act as the subscriber it named.
+  - status: 404
+    title: Not Found
+    code: not_found
+    meaning: No such object, or one outside the requesting organization.
+    remediation: >-
+      Cross-organization reads are reported as 404 rather than 403, so a 404 does
+      not by itself prove the object does not exist.
+  - status: 422
+    title: Unprocessable
+    code: unprocessable
+    meaning: >-
+      Well-formed but unprocessable — a validation failure, or a recognized
+      carrier that is not yet supported.
+    remediation: >-
+      Read `error.fields[]` for the failing input. A 422 on create states the
+      reason a carrier is unavailable, distinguishing an unsupported carrier
+      from an invalid reference — e.g. "Carrier 'Crowley' is reachable only
+      behind a customer login and can't be tracked publicly."
+  - status: 429
+    title: Too Many Requests
+    meaning: Rate limit exceeded.
+    remediation: >-
+      Back off and retry. No Retry-After or RateLimit-* header is emitted; see
+      rate-limits/matilogistics-rate-limits.yml.
+
+asynchronous_failures:
+  note: >-
+    A tracking request that is accepted (201) can still fail LATER, during
+    asynchronous carrier resolution. Those failures are not HTTP errors — they
+    surface as fields on the tracking_request resource and as webhook events.
+  fields: [status, error_code, error_message]
+  values:
+    - status: pending
+      meaning: Accepted; the carrier lookup has not resolved yet.
+    - status: succeeded
+      meaning: Resolved; tracked_object carries the shipment.
+    - status: failed
+      meaning: The carrier lookup failed.
+      example_error_code: carrier_unknown
+      example_meaning: >-
+        No detection stage resolved a carrier. Resubmitting the same reference
+        with `carrier` specified updates the existing request, retaining its id.
+  webhook_events: [tracking_request.failed, tracking_request.not_found]
+
+validation_rules_documented:
+  - rule: ISO 6346 shape and check digit
+    applies_to: request_type container (and auto classification)
+    behavior: >-
+      "A reference whose shape is invalid, such as one with an incorrect check
+      digit, is rejected with 422 naming the reason before any carrier is
+      queried."
+  - rule: request_type enumeration
+    values: [auto, container, bol, booking]
+    behavior: 'Invalid values return 422 with fields[].msg "Input should be ''container'', ''bol'' or ''booking''".'
+
+gaps:
+  - No RFC 9457 application/problem+json. Errors use a bespoke {"error":{...}} envelope.
+  - No published catalogue of error_code values; only carrier_unknown is named in the docs.
+  - No machine-readable error reference (no OpenAPI response schemas, no error-code table endpoint).

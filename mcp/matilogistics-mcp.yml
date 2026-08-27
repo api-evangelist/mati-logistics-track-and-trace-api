@@ -1,0 +1,137 @@
+generated: '2026-08-27'
+method: derived
+status: candidate
+source: >-
+  DERIVED, NOT PUBLISHED. Mati Logistics ships no MCP server. The tool list
+  below is a candidate mapped from the endpoints documented at
+  https://www.matilogistics.com/api (read 2026-08-27). It is a proposal for what
+  an MCP server over this API would expose, not a description of anything that
+  exists. No endpoint URL is asserted because none exists.
+provider: Mati Logistics
+providerId: matilogistics
+
+deployment:
+  mode: none
+  endpoint: null
+  install: null
+  package: null
+  auth: none
+  verified: derived
+  note: >-
+    Nobody ships a server. Probed 2026-08-27: https://api.matilogistics.com/mcp
+    returns the API's own 404 JSON envelope; no /.well-known/oauth-protected-
+    resource or /.well-known/oauth-authorization-server on any host; no npm or
+    PyPI package under any matilogistics name; no GitHub organisation. The
+    provider publishes no llms.txt either, so there is no tool list to fall back
+    on.
+
+probes:
+  - {url: 'https://api.matilogistics.com/mcp', status: 404}
+  - {url: 'https://api.matilogistics.com/.well-known/oauth-protected-resource', status: 404}
+  - {url: 'https://api.matilogistics.com/.well-known/oauth-authorization-server', status: 404}
+  - {url: 'https://www.matilogistics.com/.well-known/ai-plugin.json', status: 404}
+  - {url: 'https://www.matilogistics.com/llms.txt', status: 404}
+  - {url: 'https://registry.npmjs.org/-/v1/search?text=matilogistics', status: 200, note: '0 results'}
+  - {url: 'https://api.github.com/orgs/matilogistics', status: 404}
+
+apis_yml_pointer_emitted: false
+apis_yml_pointer_note: >-
+  NO `type: MCPServer` pointer was wired into apis.yml for this artifact, and
+  that is deliberate. deployment.mode is `none` — no server exists, hosted or
+  stdio — so the pointer would assert an agent surface the provider does not
+  ship. Same rule the pipeline applies to WellKnown and AgentCard: emit the
+  pointer only on a real hit. Wire it the moment Mati publishes a server.
+
+server: null
+auth_if_built:
+  scheme: bearer API key (tnt_ prefix) forwarded as the Authorization header
+  detail: authentication/matilogistics-authentication.yml
+
+candidate_tool_count: 11
+candidate_tools:
+  - name: track_reference
+    category: tracking
+    rest: 'POST /v2/tracking_requests'
+    description: >-
+      Submit a container number, bill of lading or booking for tracking.
+      Accepts request_type (auto|container|bol|booking), request_number, an
+      optional carrier hint (SCAC or name) and continue_tracking.
+    write: true
+    reversal: 'DELETE /v2/tracking_requests/{id}'
+  - name: list_tracking_requests
+    category: tracking
+    rest: 'GET /v2/tracking_requests'
+    description: List the organisation's tracking requests. Cursor-paginated.
+  - name: get_tracking_request
+    category: tracking
+    rest: 'GET /v2/tracking_requests/{id}'
+    description: One tracking request, with its resolved shipment embedded as tracked_object.
+  - name: get_tracking_requests_batch
+    category: tracking
+    rest: 'POST /v2/tracking_requests/batch'
+    description: 'Retrieve multiple tracking-request records by id in one call: {"ids": [...]}.'
+  - name: stop_tracking
+    category: tracking
+    rest: 'DELETE /v2/tracking_requests/{id}'
+    description: Stop tracking a reference. Other subscribers tracking the same container are unaffected.
+    write: true
+    destructive: true
+  - name: list_shipments
+    category: shipments
+    rest: 'GET /v2/shipments'
+    description: List shipments. Cursor-paginated.
+  - name: get_shipment
+    category: shipments
+    rest: 'GET /v2/shipments/{id}'
+    description: One shipment with its full event history, route and transshipments.
+  - name: list_shipment_containers
+    category: shipments
+    rest: 'GET /v2/shipments/{id}/containers'
+    description: Containers on a shipment.
+  - name: get_container_events
+    category: shipments
+    rest: 'GET /v2/containers/{id}/events'
+    description: Milestone events for one container.
+  - name: detect_carrier
+    category: reference
+    rest: 'GET /v2/carriers/detect'
+    description: >-
+      Validate and classify a reference and resolve its carrier BEFORE
+      submission. deep=true performs a lessor lookup for leased containers,
+      takes several seconds and counts against the write rate limit.
+  - name: list_carriers
+    category: reference
+    rest: 'GET /v2/carriers'
+    description: Carrier and NVOCC coverage with SCACs.
+
+candidate_tools_excluded:
+  - name: webhook management
+    rest: 'POST /v2/webhooks, POST /v2/webhooks/{id}/rotate_secret'
+    reason: >-
+      Credential-issuing operations. The creation response returns a signing
+      secret exactly once; exposing that through an agent tool would put a
+      long-lived secret into a model context. Left out of the candidate surface
+      deliberately.
+  - name: 'GET /v2/terminals'
+    reason: Documented as an endpoint but with no published response shape, so no honest inputSchema could be stated.
+
+inputSchema_note: >-
+  NO inputSchema is given for any candidate tool. Mati publishes no OpenAPI, so
+  there are no parameter or requestBody definitions to inherit, and inventing
+  them would be fabrication. The `rest` field names the documented endpoint;
+  request fields are described in prose from the reference only where the
+  reference itself prints them.
+
+agent_readiness:
+  mcp_server: false
+  llms_txt: false
+  agent_card: false
+  openapi: false
+  summary: >-
+    No agent surface of any kind. The API is well documented for a human
+    integrator and completely undiscoverable to an agent: nothing at
+    /.well-known/, no llms.txt, and no machine-readable contract. The reference
+    itself IS crawlable — robots.txt disallows /api/ (with the trailing slash)
+    while the reference lives at /api, so it is reachable by a single character,
+    and it is listed in sitemap.xml. Worth flagging to the provider: that
+    Disallow is one slash away from hiding their only public API documentation.

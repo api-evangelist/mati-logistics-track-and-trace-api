@@ -1,0 +1,143 @@
+specification: API Commons Plans
+specificationVersion: '0.1'
+provider: Mati Logistics
+providerId: matilogistics
+generated: '2026-08-27'
+created: '2026-08-27'
+modified: '2026-08-27'
+method: searched
+source: >-
+  https://www.matilogistics.com/track-trace#pricing — the pricing section and
+  FAQ of the Track and Trace product page, read 2026-08-27. This is the page the
+  site navigation labels "Pricing" and the page listed in sitemap.xml. Cross-read
+  against https://www.matilogistics.com/api ("Getting access") and
+  https://www.matilogistics.com/demo, which carries a DIFFERENT and apparently
+  older pricing table — see pricing_page_conflict below.
+docs: https://www.matilogistics.com/track-trace#pricing
+currency: USD
+billing_platform: Stripe
+billing_period: monthly (subscriptions); one-off (prepaid credits)
+free_trial: 7 days
+plan_count: 3
+
+description: >-
+  Mati prices the product per shipment tracked, not per API call. A shipment is
+  "one container, bill of lading, or booking number, tracked from booking to
+  delivery". API access is a gated feature of the paid tiers, not a separate
+  product: it is included at 250+ shipments/month, and available as a $1,800/year
+  add-on below that. The free tier explicitly excludes it.
+
+plans:
+  - id: matilogistics-free
+    name: Free
+    price: 0
+    currency: USD
+    type: free
+    billing_period: none
+    included_quota: 10 shipments, tracked until completion
+    api_access: false
+    api_access_note: '"API access not included"'
+    features:
+      - 10 shipments included, tracked until completion
+      - Access through the Mati app
+    limits:
+      shipments: 10
+      overage: not available on this tier
+
+  - id: matilogistics-subscription
+    name: Subscription
+    price: 200
+    price_note: >-
+      $200/month is the published example for 100 shipments/month. Pricing is a
+      volume slider: $2.00 per shipment at 10-249, $1.75 at 250-499, $1.50 at
+      500-999. Subscriptions start at 10 shipments/month.
+    currency: USD
+    type: usage-tiered subscription
+    billing_period: month
+    recommended: true
+    included_quota: the monthly shipment volume you select (10-999)
+    api_access: conditional
+    api_access_note: >-
+      "API available at 250 shipments or more." Below that, "API access
+      available for $1,800 per year."
+    features:
+      - Continuous tracking until completion
+      - Shared team visibility and analytics
+      - Increase monthly shipment volume at any time
+    limits:
+      shipments_min: 10
+      shipments_max: 999
+      overage: increase the monthly volume at any time; new volume is billed at the tier rate
+    unit_pricing:
+      - {band: 10-249 shipments/month, price_per_shipment: 2.00, api_included: false}
+      - {band: 250-499 shipments/month, price_per_shipment: 1.75, api_included: true}
+      - {band: 500-999 shipments/month, price_per_shipment: 1.50, api_included: true}
+
+  - id: matilogistics-enterprise
+    name: Enterprise
+    price: null
+    price_note: '"Contact us" — custom pricing above 999 shipments/month.'
+    currency: USD
+    type: custom
+    billing_period: negotiated
+    included_quota: 1,000+ shipments/month
+    api_access: true
+    features:
+      - System integrations and implementation support
+      - Priority support for enterprise teams
+    limits:
+      shipments_min: 1000
+      overage: negotiated
+
+api_access_addon:
+  name: API access
+  price: 1800
+  currency: USD
+  billing_period: year
+  applies_to: subscriptions below 250 shipments/month
+  included_free_at: 250+ shipments/month
+  source_quote: >-
+    "How do I get API access? API access is included with subscriptions of 250
+    or more shipments per month. For lower-volume plans, API access is available
+    for $1,800 per year."
+  note: >-
+    The $1,800/year add-on is the effective floor for an API-only integrator.
+    At the 250-shipment threshold where the API becomes free, the subscription
+    itself costs $1.75 x 250 = $437.50/month, so the add-on is the cheaper door
+    for low-volume API use and the subscription is cheaper above roughly 340
+    shipments/month. (That comparison is arithmetic on the published rates, not
+    a published claim.)
+
+metering:
+  unit: shipment
+  definition: >-
+    "One container, bill of lading, or booking number, tracked from booking to
+    delivery."
+  not_metered:
+    - API requests (governed by rate limits instead, not by billing)
+    - 'Re-tracking a reference already added: "always free"'
+  rate_limits: rate-limits/matilogistics-rate-limits.yml
+
+pricing_page_conflict:
+  observed: true
+  detail: >-
+    HONESTY NOTE. Two pricing tables were served on 2026-08-27 and they do not
+    agree. /track-trace#pricing (linked from the site nav as "Pricing", present
+    in sitemap.xml) shows Free / Subscription ($2.00-$1.50 per shipment, API at
+    250+ or $1,800/yr) / Enterprise. /demo shows a different set: "Pay as you go
+    $1 / shipment" with "Web app only - no API access", and a "Subscription
+    $1/shipment/month" tier advertising "Full API access" with no volume
+    threshold. The /api reference's own "Getting access" section matches
+    /demo's framing ("Pay-as-you-go credits include the full web app but not the
+    API") but not its per-shipment rate. The figures recorded above are from
+    /track-trace because it is the canonical, sitemap-listed pricing page; a
+    buyer reading /demo would be quoted different terms.
+  probes:
+    - {url: 'https://www.matilogistics.com/track-trace', status: 200}
+    - {url: 'https://www.matilogistics.com/demo', status: 200}
+    - {url: 'https://www.matilogistics.com/api', status: 200}
+    - {url: 'https://www.matilogistics.com/pricing', status: 404}
+    - {url: 'https://matilogistics.com/#pricing', status: 200, note: 'the /api page links here, but the homepage no longer carries a pricing section'}
+
+machine_readable_pricing: false
+machine_readable_note: No pricing or catalog endpoint is published; every figure above was read from rendered HTML.
