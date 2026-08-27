@@ -1,0 +1,53 @@
+name: Mati Logistics Track and Trace API
+description: >-
+  REST API for ocean container/BOL/booking shipment visibility (track and trace) across 20+ carriers and NVOCCs, with
+  normalized milestone events, carrier detection, reference data, and signed webhooks. Access is gated behind a paid
+  subscription tier.
+url: https://raw.githubusercontent.com/api-evangelist/mati-logistics-track-and-trace-api/refs/heads/main/apis.yml
+created: '2026-08-27'
+modified: '2026-08-27'
+specificationVersion: '0.21'
+tags:
+  - logistics
+  - supply-chain
+  - shipping
+  - container-tracking
+  - ocean-freight
+  - track-and-trace
+  - shipment-visibility
+  - freight-forwarding
+  - NVOCC
+  - webhooks
+  - REST
+  - procurement
+apis:
+  - name: Mati Logistics Track and Trace API
+    description: >-
+      REST/JSON API (versioned under /v2) for tracking requests, shipments, containers, carrier/terminal reference data,
+      and webhooks. Bearer-token auth, cursor pagination, HMAC-signed webhook deliveries.
+    humanURL: https://www.matilogistics.com/api
+    baseURL: https://api.matilogistics.com
+    tags:
+      - logistics
+      - supply-chain
+      - shipping
+      - container-tracking
+      - ocean-freight
+      - track-and-trace
+      - shipment-visibility
+      - freight-forwarding
+      - NVOCC
+      - webhooks
+      - REST
+      - procurement
+    properties:
+      - type: Documentation
+        url: https://www.matilogistics.com/api
+maintainers:
+  - FN: Mati Logistics Track and Trace API
+    url: https://www.matilogistics.com
+generated:
+  by: apis.io/add
+  model: claude-opus-4-8
+  confidence: 80
+  at: '2026-08-27T05:58:18.063Z'
