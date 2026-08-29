@@ -7,6 +7,17 @@ description: 'Mati Logistics runs a network for global trade connecting buyers, 
   dwell and last-free-day data by polling or by HMAC-signed webhook. Bearer-token auth, cursor pagination, ISO 6346 and SCAC
   identifiers. API access is gated behind a paid subscription tier.'
 url: https://raw.githubusercontent.com/api-evangelist/mati-logistics-track-and-trace-api/refs/heads/main/apis.yml
+deliveryModel:
+  model: saas
+  open_source: false
+  commercial: true
+  callable_host: false
+  label: Hosted service · you call their endpoint
+  confidence: medium
+  source:
+  - pricing
+  generated: '2026-08-28'
+  method: derived
 created: '2026-08-27'
 modified: '2026-08-27'
 specificationVersion: '0.21'
