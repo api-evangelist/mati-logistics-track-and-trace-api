@@ -22,6 +22,19 @@ created: '2026-08-27'
 modified: '2026-08-27'
 specificationVersion: '0.21'
 tags:
+- Logistics
+- Supply Chain
+- Shipping
+- Container Tracking
+- Ocean Freight
+- Track and Trace
+- Shipment Visibility
+- Freight Forwarding
+- NVOCC
+- Webhook
+- REST
+- Procurement
+tags_raw:
 - logistics
 - supply-chain
 - shipping
@@ -52,6 +65,19 @@ apis:
   humanURL: https://www.matilogistics.com/api
   baseURL: https://api.matilogistics.com
   tags:
+  - Logistics
+  - Supply Chain
+  - Shipping
+  - Container Tracking
+  - Ocean Freight
+  - Track and Trace
+  - Shipment Visibility
+  - Freight Forwarding
+  - NVOCC
+  - Webhook
+  - REST
+  - Procurement
+  tags_raw:
   - logistics
   - supply-chain
   - shipping
